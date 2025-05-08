@@ -99,16 +99,16 @@ export default function InstructionPanel() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-4 sm:p-5 border border-indigo-200">
-      <h2 className="text-xl font-bold mb-4 text-indigo-700 flex items-center">
+    <div className="bg-white rounded-xl shadow-md p-3 sm:p-4 border border-indigo-200 flex flex-col h-full">
+      <h2 className="text-lg font-bold mb-2 text-indigo-700 flex items-center">
         <Cpu className="mr-2 h-5 w-5" />
         CPU Instructions
       </h2>
-      <p className="text-sm text-slate-600 mb-5">
+      <p className="text-xs text-slate-600 mb-3">
         Drag an instruction to the CPU to see how it works. Click a category to see more instructions.
       </p>
 
-      <div className="space-y-3">
+      <div className="space-y-2 overflow-y-auto flex-1" style={{ overscrollBehavior: 'contain' }}>
         {Object.entries(instructionsByType).map(([category, instructions]) => (
           <div key={category} className="border border-indigo-100 rounded-lg overflow-hidden">
             <button
@@ -132,18 +132,23 @@ export default function InstructionPanel() {
             {openCategories[category] && (
               <div className="p-2 bg-indigo-50/50">
                 <p className="text-xs text-slate-600 mb-2 px-2">{getCategoryDescription(category)}</p>
-                <AnimatePresence>
-                  {instructions.map((instruction, index) => (
+                <AnimatePresence initial={false}>
+                  {openCategories[category] && (
                     <motion.div
-                      key={instruction.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.03 }}
-                      className="mb-2"
+                      id={`category-${category}`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
                     >
-                      <DraggableInstruction instruction={instruction} />
+                      <div className="p-2 pt-0 grid grid-cols-1 gap-2 max-h-[240px] overflow-y-auto pr-1" style={{ overscrollBehavior: 'contain' }}>
+                        {instructions.map((instruction) => (
+                          <DraggableInstruction key={instruction.id} instruction={instruction} />
+                        ))}
+                      </div>
                     </motion.div>
-                  ))}
+                  )}
                 </AnimatePresence>
               </div>
             )}
@@ -222,7 +227,7 @@ const DraggableInstruction = memo(({ instruction }: { instruction: Instruction }
     <div className="relative">
       <motion.div
         ref={drag}
-        className={`p-3 ${getTypeColor()} border rounded-xl cursor-move transition-all ${
+        className={`p-2 ${getTypeColor()} border rounded-lg cursor-move transition-all ${
           isDragging ? "opacity-50 scale-95" : "opacity-100"
         }`}
         whileHover={{ scale: 1.03, boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" }}
@@ -231,11 +236,11 @@ const DraggableInstruction = memo(({ instruction }: { instruction: Instruction }
         onClick={toggleExplanation}
         aria-expanded={showExplanation}
       >
-        <div className="font-mono font-medium flex items-center">
+        <div className="font-mono font-medium flex items-center text-sm">
           {getInstructionIcon()}
           {instruction.mnemonic}
         </div>
-        <div className="text-sm text-slate-600 ml-7 mt-1">{instruction.description}</div>
+        <div className="text-xs text-slate-600 ml-7 mt-1 line-clamp-1">{instruction.description}</div>
 
         {instruction.beginner_explanation && (
           <AnimatePresence>

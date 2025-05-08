@@ -32,19 +32,11 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
   const { registers, memory, currentInstruction, executionPhase, executionSteps, currentStep, isAnimating } = cpuState
   const [showSummary, setShowSummary] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
-  const [showOperationStatus, setShowOperationStatus] = useState(false)
   const [showRegisters, setShowRegisters] = useState(true)
   const [showMemory, setShowMemory] = useState(true)
   const [instructionHistory, setInstructionHistory] = useState<Instruction[]>([])
 
-  // Show operation status when animation starts
-  useEffect(() => {
-    if (isAnimating && currentInstruction) {
-      setShowOperationStatus(true)
-    }
-  }, [isAnimating, currentInstruction])
-
-  // Show summary when animation completes and hide operation status after delay
+  // Show summary when animation completes
   useEffect(() => {
     if (!isAnimating && currentStep > 0 && currentStep === executionSteps.length) {
       // Wait a moment before showing the summary
@@ -52,14 +44,8 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
         setShowSummary(true)
       }, 500)
 
-      // Hide operation status after 3 seconds
-      const statusTimer = setTimeout(() => {
-        setShowOperationStatus(false)
-      }, 3000)
-
       return () => {
         clearTimeout(summaryTimer)
-        clearTimeout(statusTimer)
       }
     }
   }, [isAnimating, currentStep, executionSteps.length])
@@ -115,47 +101,7 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
         </Button>
       </div>
 
-      {/* Execution Status - Floating in top right when active */}
-      <AnimatePresence>
-        {currentInstruction && showOperationStatus && (
-          <motion.div
-            className="absolute top-6 right-6 z-10 w-72 bg-white rounded-xl border border-emerald-200 shadow-md p-4"
-            initial={{ opacity: 0, y: -20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9, y: -10 }}
-            transition={{ duration: 0.3 }}
-          >
-            <h3 className="font-bold mb-3 text-emerald-700 flex items-center text-sm">
-              <Info className="mr-2 h-4 w-4" />
-              Current Operation
-            </h3>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="font-mono font-medium bg-emerald-50 px-3 py-1.5 text-sm rounded-lg border border-emerald-100">
-                {currentInstruction.mnemonic}
-              </div>
-              <ArrowRight className="h-4 w-4 text-emerald-500" />
-              <div className="px-3 py-1.5 text-sm bg-emerald-100 rounded-lg text-emerald-800 font-medium capitalize">
-                {executionPhase}
-              </div>
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-full bg-slate-100 rounded-full h-2 mb-2 overflow-hidden">
-              <motion.div
-                className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${(currentStep / executionSteps.length) * 100}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-            <div className="flex justify-between text-xs text-slate-500">
-              <span>Start</span>
-              <span>{Math.round((currentStep / executionSteps.length) * 100)}%</span>
-              <span>Complete</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* No more floating execution status popup - using dedicated panel instead */}
 
       <div className="grid grid-cols-1 gap-4">
         {/* CPU Diagram */}
@@ -220,22 +166,6 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
                   showMemory={showMemory}
                   setShowMemory={setShowMemory}
                 />
-
-                {/* Current Instruction */}
-                {currentInstruction && (
-                  <motion.div
-                    className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-transparent px-4 py-2 border-2 border-cyan-400 rounded-lg shadow-[0_0_15px_rgba(34,211,238,0.6)] z-20"
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 10,
-                    }}
-                  >
-                    <span className="font-mono font-bold text-sm text-cyan-300">{currentInstruction.mnemonic}</span>
-                  </motion.div>
-                )}
               </>
             )}
           </div>
@@ -534,7 +464,7 @@ function CPUDiagram({
       case "controlUnit":
         return "Gets instructions"
       case "decoder":
-        return "Figures out what to do"
+        return "Decodes instructions"
       case "alu":
         return "Does the math"
       case "memory":
@@ -671,7 +601,7 @@ function CPUDiagram({
             </Tooltip>
 
             {/* CPU Registers Panel */}
-            <div className="col-span-6 row-span-4 bg-indigo-900/30 rounded-xl border-2 border-indigo-400/30 overflow-hidden">
+            <div className="col-span-6 row-span-6 bg-indigo-900/30 rounded-xl border-2 border-indigo-400/30 overflow-hidden">
               <button
                 className="w-full flex items-center justify-between p-2 hover:bg-indigo-800/50 transition-colors"
                 onClick={() => setShowRegisters(!showRegisters)}
@@ -706,7 +636,7 @@ function CPUDiagram({
                         {Object.entries(registers).map(([name, value]) => (
                           <motion.div
                             key={name}
-                            className={`flex justify-between p-2 rounded-lg shadow-sm border ${
+                            className={`flex justify-between items-center ${name === "FLAGS" ? "p-1" : "p-2"} rounded-lg shadow-sm border ${
                               executionPhase === "writeback"
                                 ? "bg-sky-100/90 border-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.3)]"
                                 : "bg-white/90 border-indigo-200/50"
@@ -714,8 +644,8 @@ function CPUDiagram({
                             whileHover={{ scale: 1.03 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                           >
-                            <span className="font-mono font-bold text-indigo-700">{name}:</span>
-                            <span className="font-mono text-slate-800">
+                            <span className="font-mono font-bold text-indigo-700 text-xs">{name === "FLAGS" ? "FL" : name}:</span>
+                            <span className="font-mono text-slate-800 text-sm inline-block min-w-[40px] text-right">
                               {value.toString(16).padStart(4, "0").toUpperCase()}
                             </span>
                           </motion.div>
@@ -728,7 +658,7 @@ function CPUDiagram({
             </div>
 
             {/* Memory Panel */}
-            <div className="col-span-6 row-span-4 bg-violet-900/30 rounded-xl border-2 border-violet-400/30 overflow-hidden">
+            <div className="col-span-6 row-span-6 bg-violet-900/30 rounded-xl border-2 border-violet-400/30 overflow-hidden">
               <button
                 className="w-full flex items-center justify-between p-2 hover:bg-violet-800/50 transition-colors"
                 onClick={() => setShowMemory(!showMemory)}
@@ -759,22 +689,18 @@ function CPUDiagram({
                     className="overflow-hidden"
                   >
                     <div className="p-2">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-2">
                         {memory.slice(0, 16).map((value, index) => (
                           <motion.div
                             key={index}
-                            className={`text-center p-2 rounded-lg shadow-sm border ${
-                              executionPhase === "memory"
-                                ? "bg-violet-100/90 border-violet-300 shadow-[0_0_10px_rgba(167,139,250,0.3)]"
-                                : "bg-white/90 border-violet-200/50"
-                            }`}
+                            className={`text-center p-1 rounded-lg shadow-sm border ${executionPhase === "memory" ? "bg-violet-100/90 border-violet-300 shadow-[0_0_10px_rgba(167,139,250,0.3)]" : "bg-white/90 border-violet-200/50"}`}
                             whileHover={{ scale: 1.05 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                           >
                             <div className="text-xs text-violet-600 font-medium">
                               {index.toString(16).padStart(2, "0").toUpperCase()}
                             </div>
-                            <div className="font-mono text-slate-800">
+                            <div className="font-mono text-slate-800 text-sm">
                               {value.toString(16).padStart(2, "0").toUpperCase()}
                             </div>
                           </motion.div>

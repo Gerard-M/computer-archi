@@ -6,6 +6,8 @@ import { HTML5Backend } from "react-dnd-html5-backend"
 import { Cpu, Sparkles, BookOpen, Lightbulb } from "lucide-react"
 import InstructionPanel from "./instruction-panel"
 import CPUVisualization from "./cpu-visualization"
+import ProcessDescriptionPanel from "./process-description-panel"
+import BackgroundParticles from "./background-particles"
 import type { Instruction, CPUState, RegisterState } from "@/lib/types"
 import { executeInstruction } from "@/lib/cpu-logic"
 import { motion } from "framer-motion"
@@ -93,28 +95,13 @@ export default function CPUSimulator() {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-slate-50 to-violet-50 py-4 sm:py-8">
+      <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-slate-50 to-violet-50 py-6 pb-8">
         {/* Background particles - reduced for performance */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          {[...Array(10)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute bg-indigo-200 rounded-full opacity-20"
-              style={{
-                width: `${10 + Math.random() * 20}px`,
-                height: `${10 + Math.random() * 20}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `float ${10 + Math.random() * 20}s linear infinite`,
-                animationDelay: `${Math.random() * 10}s`,
-              }}
-            />
-          ))}
-        </div>
+        <BackgroundParticles />
 
         <div className="container mx-auto px-4 relative z-10">
           <motion.header
-            className="text-center py-4 sm:py-6 mb-6 sm:mb-8"
+            className="text-center py-2 sm:py-3 mb-3 sm:mb-4"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -143,9 +130,10 @@ export default function CPUSimulator() {
             </div>
           </motion.header>
 
-          <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 mb-8 sm:mb-12">
+          <div className="flex flex-col lg:flex-row gap-6 sm:gap-6 mb-8">
+            {/* Left Column: Instruction Panel */}
             <motion.div
-              className="lg:w-1/4"
+              className="lg:w-1/5"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -153,10 +141,11 @@ export default function CPUSimulator() {
               <InstructionPanel />
             </motion.div>
 
+            {/* Middle Column: CPU Visualization */}
             <motion.div
-              className="lg:w-3/4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              className="lg:w-3/5"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <CPUVisualization
@@ -165,6 +154,16 @@ export default function CPUSimulator() {
                 onReset={resetSimulation}
                 setCPUState={setCPUState}
               />
+            </motion.div>
+            
+            {/* Right Column: Process Description Panel */}
+            <motion.div
+              className="lg:w-1/5"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <ProcessDescriptionPanel cpuState={cpuState} />
             </motion.div>
           </div>
 

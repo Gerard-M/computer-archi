@@ -4,7 +4,7 @@ import { useDrop } from "react-dnd"
 import { Cpu, ArrowRight, RotateCcw, Info, Zap, Sparkles, HelpCircle, ChevronUp, ChevronDown } from "lucide-react"
 import type { Instruction, CPUState } from "@/lib/types"
 import { Button } from "@/components/ui/button"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +18,7 @@ interface CPUVisualizationProps {
 }
 
 export default function CPUVisualization({ cpuState, onInstructionDrop, onReset, setCPUState }: CPUVisualizationProps) {
+  const dropRef = useRef<HTMLDivElement>(null);
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "INSTRUCTION",
     drop: (item: Instruction) => {
@@ -27,6 +28,13 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
       isOver: !!monitor.isOver(),
     }),
   }))
+  
+  // Connect drop ref
+  useEffect(() => {
+    if (dropRef.current) {
+      drop(dropRef.current);
+    }
+  }, [drop])
 
   const { registers, memory, currentInstruction, executionPhase, executionSteps, currentStep, isAnimating } = cpuState
   const [showSummary, setShowSummary] = useState(false)
@@ -161,7 +169,7 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
         {/* CPU Diagram - Now full width and larger */}
         <div className="lg:col-span-3">
           <div
-            ref={drop}
+            ref={dropRef}
             className={`relative border-2 ${
               isOver ? "border-indigo-500 bg-indigo-50" : "border-slate-200"
             } rounded-xl p-6 h-[550px] transition-all duration-300 bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden`}
@@ -469,7 +477,7 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
                       {Object.entries(step.registerChanges).map(([reg, value]) => (
                         <div key={reg} className="text-sm flex justify-between p-1 border-b border-slate-100">
                           <span className="font-mono font-medium text-indigo-600">{reg}:</span>
-                          <span className="font-mono">{value.toString(16).padStart(4, "0").toUpperCase()}</span>
+                          <span className="font-mono">{(value ?? 0).toString(16).padStart(4, "0").toUpperCase()}</span>
                         </div>
                       ))}
                     </div>
@@ -483,7 +491,7 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
                       {Object.entries(step.memoryChanges).map(([addr, value]) => (
                         <div key={addr} className="text-sm flex justify-between p-1 border-b border-slate-100">
                           <span className="font-mono font-medium text-purple-600">Addr {addr}:</span>
-                          <span className="font-mono">{value.toString(16).padStart(4, "0").toUpperCase()}</span>
+                          <span className="font-mono">{(value ?? 0).toString(16).padStart(4, "0").toUpperCase()}</span>
                         </div>
                       ))}
                     </div>
@@ -540,80 +548,106 @@ function CPUDiagram({
         return "bg-gradient-to-r from-rose-50 to-rose-100 border-rose-200 hover:shadow-md hover:border-rose-300"
       case "memory":
         return "bg-gradient-to-r from-violet-50 to-violet-100 border-violet-200 hover:shadow-md hover:border-violet-300"
-      case "registers":
-        return "bg-gradient-to-r from-sky-50 to-sky-100 border-sky-200 hover:shadow-md hover:border-sky-300"
-      case "cache":
-        return "bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200 hover:shadow-md hover:border-orange-300"
-      case "bus":
-        return "bg-gradient-to-r from-slate-100 to-slate-200 border-slate-300"
       default:
-        return "bg-slate-100 border-slate-300"
+        return "cpu" // Show the entire CPU in idle state
     }
   }
 
-  // Component descriptions for tooltips - now more beginner-friendly
+  // Component descriptions - now more detailed for standalone display
   const getComponentDescription = (component: string) => {
     switch (component) {
-      case "controlUnit":
-        return "The Control Unit is like the conductor of an orchestra. It coordinates all CPU operations, telling other parts what to do and when to do it."
+      case "control":
+        return "The Control Unit is getting the instruction from memory. It coordinates all CPU activities and tells other components what to do."
       case "decoder":
-        return "The Instruction Decoder is like a translator. It takes the instruction code and figures out what operation to perform and which data to use."
+        return `The Instruction Decoder is figuring out what "${currentInstruction?.mnemonic || ''}" means and what needs to happen next. It translates machine code into specific operations.`
       case "alu":
-        return "The Arithmetic Logic Unit is like a calculator. It performs math operations (addition, subtraction) and logical operations (AND, OR, XOR)."
-      case "memory":
-        return "Memory is like a filing cabinet. It stores both the program instructions and the data the CPU is working with."
+        return `The Arithmetic Logic Unit (ALU) is performing the calculation: ${currentInstruction?.beginner_explanation || currentInstruction?.description || ''}. It handles all mathematical and logical operations.`
       case "registers":
-        return "Registers are like small, quick-access boxes on the CPU's desk. They hold data that the CPU is actively working with."
-      case "cache":
-        return "Cache is like a small notepad for frequently used information. It's faster to access than main memory."
-      case "dataBus":
-        return "The Data Bus is like a highway that carries data between different parts of the computer."
-      case "addressBus":
-        return "The Address Bus is like a street address. It tells the CPU where in memory to find or store data."
-      case "controlBus":
-        return "The Control Bus carries command signals, like a traffic officer directing the flow of information."
+        return "The Registers are being updated with the result of the operation. These are small, ultra-fast storage locations inside the CPU for data that's actively being used."
+      case "memory":
+        return "The Memory unit is being accessed to read or write data. This is where all programs and data are stored when the computer is running."
+      case "cpu":
+        return "The CPU is waiting for an instruction. It's the brain of the computer that processes all instructions."
       default:
-        return "CPU component"
+        return ""
     }
   }
 
   // Get emoji for each component
   const getComponentEmoji = (component: string) => {
     switch (component) {
-      case "controlUnit":
+      case "control":
         return "🎮"
       case "decoder":
         return "🔍"
       case "alu":
         return "🧮"
-      case "memory":
-        return "💾"
       case "registers":
         return "📋"
-      case "cache":
-        return "⚡"
+      case "memory":
+        return "💾"
+      case "cpu":
+        return "🖥️"
       default:
-        return "⚙️"
+        return ""
     }
   }
 
   // Get simple label for each component
   const getSimpleLabel = (component: string) => {
     switch (component) {
-      case "controlUnit":
-        return "Gets instructions"
+      case "control":
+        return "Control Unit"
       case "decoder":
-        return "Figures out what to do"
+        return "Instruction Decoder"
       case "alu":
-        return "Does the math"
-      case "memory":
-        return "Stores data & programs"
+        return "ALU"
       case "registers":
-        return "Quick access storage"
-      case "cache":
-        return "Super fast memory"
+        return "Registers"
+      case "memory":
+        return "Memory"
+      case "cpu":
+        return "Central Processing Unit (CPU)"
       default:
         return ""
+    }
+  }
+
+  // Get phase description
+  const getPhaseLabel = (phase: string) => {
+    switch (phase) {
+      case "fetch":
+        return "Fetch Phase"
+      case "decode":
+        return "Decode Phase"
+      case "execute":
+        return "Execute Phase"
+      case "memory":
+        return "Memory Access Phase"
+      case "writeback":
+        return "Writeback Phase"
+      default:
+        return "Idle State"
+    }
+  }
+
+  // Get component background color
+  const getComponentColor = (component: string) => {
+    switch (component) {
+      case "control":
+        return "bg-yellow-50 border-yellow-300"
+      case "decoder":
+        return "bg-green-50 border-green-300"
+      case "alu":
+        return "bg-rose-50 border-rose-300"
+      case "registers":
+        return "bg-blue-50 border-blue-300"
+      case "memory":
+        return "bg-purple-50 border-purple-300"
+      case "cpu":
+        return "bg-indigo-50 border-indigo-300"
+      default:
+        return "bg-white border-gray-300"
     }
   }
 

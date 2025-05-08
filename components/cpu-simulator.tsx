@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { DndProvider } from "react-dnd"
+import { DndProvider, useDrop } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
 import { Cpu, Sparkles, BookOpen, Lightbulb } from "lucide-react"
 import ClientOnly from "./client-only"
 import InstructionPanel from "./instruction-panel"
-import CPUVisualization from "./cpu-visualization"
+import SequentialCPUVisualization from "./sequential-cpu-visualization"
 import type { Instruction, CPUState, RegisterState } from "@/lib/types"
 import { executeInstruction } from "@/lib/cpu-logic"
 import { motion } from "framer-motion"
@@ -31,6 +31,10 @@ export default function CPUSimulator() {
     currentStep: -1,
     isAnimating: false,
   })
+  
+  // Playback control states
+  const [isPaused, setIsPaused] = useState(false)
+  const [playbackSpeed, setPlaybackSpeed] = useState(1) // 0.5 = slow, 1 = normal, 2 = fast
 
   const [showIntro, setShowIntro] = useState(true)
 
@@ -46,7 +50,8 @@ export default function CPUSimulator() {
   }
 
   useEffect(() => {
-    if (cpuState.isAnimating && cpuState.currentStep < cpuState.executionSteps.length) {
+    // Only proceed if animating, not paused, and there are steps remaining
+    if (cpuState.isAnimating && !isPaused && cpuState.currentStep < cpuState.executionSteps.length) {
       const timer = setTimeout(() => {
         setCPUState((prev) => {
           const step = prev.executionSteps[prev.currentStep]
@@ -75,11 +80,11 @@ export default function CPUSimulator() {
             isAnimating: prev.currentStep + 1 < prev.executionSteps.length,
           }
         })
-      }, 1000) // 1 second per step
+      }, 1000 / playbackSpeed) // Adjust speed based on playbackSpeed setting
 
       return () => clearTimeout(timer)
     }
-  }, [cpuState.isAnimating, cpuState.currentStep, cpuState.executionSteps])
+  }, [cpuState.isAnimating, cpuState.currentStep, cpuState.executionSteps, isPaused, playbackSpeed])
 
   const resetSimulation = () => {
     setCPUState((prev) => ({
@@ -90,6 +95,104 @@ export default function CPUSimulator() {
       currentStep: -1,
       isAnimating: false,
     }))
+    setIsPaused(false)
+    setPlaybackSpeed(1)
+  }
+  
+  // Step forward one execution step
+  const stepForward = () => {
+    if (cpuState.currentStep < cpuState.executionSteps.length - 1) {
+      setCPUState((prev) => {
+        const step = prev.executionSteps[prev.currentStep + 1]
+        const newRegisters = { ...prev.registers }
+        const newMemory = [...prev.memory]
+
+        // Apply the changes from the next step
+        if (step.registerChanges) {
+          Object.entries(step.registerChanges).forEach(([reg, value]) => {
+            newRegisters[reg as keyof RegisterState] = value as number
+          })
+        }
+
+        if (step.memoryChanges) {
+          Object.entries(step.memoryChanges).forEach(([addr, value]) => {
+            newMemory[Number.parseInt(addr)] = value
+          })
+        }
+
+        return {
+          ...prev,
+          registers: newRegisters,
+          memory: newMemory,
+          executionPhase: step.phase,
+          currentStep: prev.currentStep + 1,
+          isAnimating: false, // Stop automatic animation when manually stepping
+        }
+      })
+    }
+  }
+  
+  // Step backward one execution step
+  const stepBackward = () => {
+    if (cpuState.currentStep > 0) {
+      // We need to rebuild the CPU state up to the previous step
+      // by applying all steps from the beginning up to currentStep - 1
+      const targetStep = cpuState.currentStep - 1
+      
+      // Start with initial state
+      const initialRegisters: RegisterState = {
+        AX: 0, BX: 0, CX: 0, DX: 0, PC: 0, SP: 0, FLAGS: 0
+      }
+      const initialMemory = Array(64).fill(0)
+      
+      // Apply all steps up to the target step
+      let newRegisters = { ...initialRegisters }
+      let newMemory = [...initialMemory]
+      let newPhase: "idle" | "fetch" | "decode" | "execute" | "memory" | "writeback" = "idle"
+      
+      for (let i = 0; i <= targetStep; i++) {
+        const step = cpuState.executionSteps[i]
+        newPhase = step.phase
+        
+        if (step.registerChanges) {
+          Object.entries(step.registerChanges).forEach(([reg, value]) => {
+            newRegisters[reg as keyof RegisterState] = value as number
+          })
+        }
+        
+        if (step.memoryChanges) {
+          Object.entries(step.memoryChanges).forEach(([addr, value]) => {
+            newMemory[Number.parseInt(addr)] = value
+          })
+        }
+      }
+      
+      setCPUState((prev) => ({
+        ...prev,
+        registers: newRegisters,
+        memory: newMemory,
+        executionPhase: newPhase,
+        currentStep: targetStep,
+        isAnimating: false, // Stop automatic animation when manually stepping
+      }))
+    }
+  }
+  
+  // Toggle play/pause
+  const togglePlayPause = () => {
+    if (!cpuState.isAnimating && !isPaused) {
+      // If not currently animating and not paused, restart animation
+      setCPUState((prev) => ({
+        ...prev,
+        isAnimating: prev.currentStep < prev.executionSteps.length - 1,
+      }))
+    }
+    setIsPaused(prev => !prev)
+  }
+  
+  // Change playback speed
+  const changeSpeed = (newSpeed: number) => {
+    setPlaybackSpeed(newSpeed)
   }
 
   const [particles, setParticles] = useState<Array<{
@@ -173,23 +276,44 @@ export default function CPUSimulator() {
               className="lg:w-1/4"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              transition={{ delay: 0.4 }}
             >
               <InstructionPanel />
             </motion.div>
 
             <motion.div
-              className="lg:w-3/4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              className="lg:w-3/4 lg:min-h-[600px]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
             >
-              <CPUVisualization
-                cpuState={cpuState}
-                onInstructionDrop={handleInstructionDrop}
-                onReset={resetSimulation}
-                setCPUState={setCPUState}
-              />
+              <div className="rounded-xl border border-indigo-200 bg-white shadow-sm p-6">
+                <SequentialCPUVisualization
+                  cpuState={cpuState}
+                  currentInstruction={cpuState.currentInstruction}
+                  onInstructionDrop={handleInstructionDrop}
+                  isPaused={isPaused}
+                  playbackSpeed={playbackSpeed}
+                  onTogglePlayPause={togglePlayPause}
+                  onStepForward={stepForward}
+                  onStepBackward={stepBackward}
+                  onChangeSpeed={changeSpeed}
+                />
+                
+                {!cpuState.isAnimating && cpuState.executionPhase === "idle" && (
+                  <div className="mt-4 text-center">
+                    <p className="text-slate-600 mb-3">Drag an instruction here to see the CPU process it</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={resetSimulation}
+                      className="text-indigo-600"
+                    >
+                      Reset Simulation
+                    </Button>
+                  </div>
+                )}
+              </div>
             </motion.div>
           </div>
 

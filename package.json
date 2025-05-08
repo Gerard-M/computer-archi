@@ -61,8 +61,8 @@
     "@types/hoist-non-react-statics": "latest",
     "@emotion/is-prop-valid": "latest",
     "react-dnd": "latest",
-    "framer-motion": "latest",
-    "react-dnd-html5-backend": "latest"
+    "react-dnd-html5-backend": "latest",
+    "framer-motion": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useDrag } from "react-dnd"
 import {
   ArrowRight,
@@ -27,7 +29,7 @@ import type { Instruction } from "@/lib/types"
 import { instructionsByType } from "@/lib/instructions"
 import { motion, AnimatePresence } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
-import { useState } from "react"
+import { useState, useCallback, memo } from "react"
 
 export default function InstructionPanel() {
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
@@ -38,12 +40,12 @@ export default function InstructionPanel() {
     io: false,
   })
 
-  const toggleCategory = (category: string) => {
+  const toggleCategory = useCallback((category: string) => {
     setOpenCategories((prev) => ({
       ...prev,
       [category]: !prev[category],
     }))
-  }
+  }, [])
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -97,7 +99,7 @@ export default function InstructionPanel() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-5 border border-indigo-200">
+    <div className="bg-white rounded-xl shadow-md p-4 sm:p-5 border border-indigo-200">
       <h2 className="text-xl font-bold mb-4 text-indigo-700 flex items-center">
         <Cpu className="mr-2 h-5 w-5" />
         CPU Instructions
@@ -136,7 +138,7 @@ export default function InstructionPanel() {
                       key={instruction.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
+                      transition={{ delay: index * 0.03 }}
                       className="mb-2"
                     >
                       <DraggableInstruction instruction={instruction} />
@@ -152,7 +154,7 @@ export default function InstructionPanel() {
   )
 }
 
-function DraggableInstruction({ instruction }: { instruction: Instruction }) {
+const DraggableInstruction = memo(({ instruction }: { instruction: Instruction }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "INSTRUCTION",
     item: instruction,
@@ -211,6 +213,11 @@ function DraggableInstruction({ instruction }: { instruction: Instruction }) {
     }
   }
 
+  const toggleExplanation = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setShowExplanation(!showExplanation)
+  }
+
   return (
     <div className="relative">
       <motion.div
@@ -221,7 +228,7 @@ function DraggableInstruction({ instruction }: { instruction: Instruction }) {
         whileHover={{ scale: 1.03, boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" }}
         whileTap={{ scale: 0.97 }}
         transition={{ type: "spring", stiffness: 400, damping: 10 }}
-        onClick={() => setShowExplanation(!showExplanation)}
+        onClick={toggleExplanation}
         aria-expanded={showExplanation}
       >
         <div className="font-mono font-medium flex items-center">
@@ -250,10 +257,7 @@ function DraggableInstruction({ instruction }: { instruction: Instruction }) {
         {instruction.beginner_explanation && (
           <button
             className="absolute bottom-2 right-2 text-xs text-indigo-500 hover:text-indigo-700 bg-white/80 px-2 py-0.5 rounded-full"
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowExplanation(!showExplanation)
-            }}
+            onClick={toggleExplanation}
             aria-label={showExplanation ? "Hide explanation" : "Show explanation"}
           >
             {showExplanation ? "Hide" : "Explain"}
@@ -262,4 +266,6 @@ function DraggableInstruction({ instruction }: { instruction: Instruction }) {
       </motion.div>
     </div>
   )
-}
+})
+
+DraggableInstruction.displayName = "DraggableInstruction"

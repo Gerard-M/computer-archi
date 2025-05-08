@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { DndProvider } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
 import { Cpu, Sparkles, BookOpen, Lightbulb } from "lucide-react"
@@ -33,7 +33,7 @@ export default function CPUSimulator() {
 
   const [showIntro, setShowIntro] = useState(true)
 
-  const handleInstructionDrop = (instruction: Instruction) => {
+  const handleInstructionDrop = useCallback((instruction: Instruction) => {
     setCPUState((prev) => ({
       ...prev,
       currentInstruction: instruction,
@@ -42,7 +42,7 @@ export default function CPUSimulator() {
       currentStep: 0,
       isAnimating: true,
     }))
-  }
+  }, [])
 
   useEffect(() => {
     if (cpuState.isAnimating && cpuState.currentStep < cpuState.executionSteps.length) {
@@ -80,7 +80,7 @@ export default function CPUSimulator() {
     }
   }, [cpuState.isAnimating, cpuState.currentStep, cpuState.executionSteps])
 
-  const resetSimulation = () => {
+  const resetSimulation = useCallback(() => {
     setCPUState((prev) => ({
       ...prev,
       currentInstruction: null,
@@ -89,14 +89,14 @@ export default function CPUSimulator() {
       currentStep: -1,
       isAnimating: false,
     }))
-  }
+  }, [])
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-slate-50 to-violet-50 py-8">
-        {/* Background particles */}
+      <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-slate-50 to-violet-50 py-4 sm:py-8">
+        {/* Background particles - reduced for performance */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          {[...Array(20)].map((_, i) => (
+          {[...Array(10)].map((_, i) => (
             <div
               key={i}
               className="absolute bg-indigo-200 rounded-full opacity-20"
@@ -114,21 +114,21 @@ export default function CPUSimulator() {
 
         <div className="container mx-auto px-4 relative z-10">
           <motion.header
-            className="text-center py-6 mb-8"
+            className="text-center py-4 sm:py-6 mb-6 sm:mb-8"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
             <div className="flex items-center justify-center mb-4">
               <div className="relative">
-                <Cpu className="h-12 w-12 text-indigo-600 mr-3" />
-                <Sparkles className="h-5 w-5 text-amber-400 absolute -top-1 -right-1" />
+                <Cpu className="h-10 w-10 sm:h-12 sm:w-12 text-indigo-600 mr-3" />
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-amber-400 absolute -top-1 -right-1" />
               </div>
-              <h1 className="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
+              <h1 className="text-4xl sm:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
                 CPU Simulator
               </h1>
             </div>
-            <p className="text-slate-600 max-w-2xl mx-auto text-lg">
+            <p className="text-slate-600 max-w-2xl mx-auto text-base sm:text-lg">
               Learn how a CPU works by dragging instructions and watching them execute step by step!
             </p>
             <div className="flex justify-center mt-5">
@@ -143,7 +143,7 @@ export default function CPUSimulator() {
             </div>
           </motion.header>
 
-          <div className="flex flex-col lg:flex-row gap-8 mb-12">
+          <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 mb-8 sm:mb-12">
             <motion.div
               className="lg:w-1/4"
               initial={{ opacity: 0, x: -20 }}
@@ -169,7 +169,7 @@ export default function CPUSimulator() {
           </div>
 
           <motion.footer
-            className="text-center text-sm text-slate-500 py-6 border-t border-indigo-100 mt-8"
+            className="text-center text-sm text-slate-500 py-4 sm:py-6 border-t border-indigo-100 mt-6 sm:mt-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}

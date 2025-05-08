@@ -4,7 +4,7 @@ import { useDrop } from "react-dnd"
 import { Cpu, ArrowRight, RotateCcw, Info, Zap, Sparkles, HelpCircle, ChevronUp, ChevronDown } from "lucide-react"
 import type { Instruction, CPUState } from "@/lib/types"
 import { Button } from "@/components/ui/button"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
@@ -35,7 +35,6 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
   const [showRegisters, setShowRegisters] = useState(true)
   const [showMemory, setShowMemory] = useState(true)
   const [instructionHistory, setInstructionHistory] = useState<Instruction[]>([])
-  const [showHistory, setShowHistory] = useState(true)
 
   // Show operation status when animation starts
   useEffect(() => {
@@ -71,11 +70,11 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
     }
   }, [currentInstruction, instructionHistory])
 
-  const handleCloseSummary = () => {
+  const handleCloseSummary = useCallback(() => {
     setShowSummary(false)
-  }
+  }, [])
 
-  const resetSimulation = () => {
+  const resetSimulation = useCallback(() => {
     setCPUState((prev) => ({
       ...prev,
       currentInstruction: null,
@@ -85,11 +84,11 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
       isAnimating: false,
     }))
     setInstructionHistory([])
-  }
+  }, [setCPUState])
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 border border-slate-200 relative">
-      <div className="flex justify-between items-center mb-8">
+    <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 border border-slate-200 relative">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex items-center">
           <h2 className="text-xl font-bold text-indigo-600 flex items-center">
             <Cpu className="mr-2 h-5 w-5" />
@@ -115,7 +114,7 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
         </Button>
       </div>
 
-      {/* Execution Status - Now floating in top right when active */}
+      {/* Execution Status - Floating in top right when active */}
       <AnimatePresence>
         {currentInstruction && showOperationStatus && (
           <motion.div
@@ -157,18 +156,18 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 gap-6">
-        {/* CPU Diagram - Now full width and larger */}
+      <div className="grid grid-cols-1 gap-4">
+        {/* CPU Diagram */}
         <div>
           <div
             ref={drop}
             className={`relative border-2 ${
               isOver ? "border-indigo-500 bg-indigo-50" : "border-slate-200"
-            } rounded-xl p-6 h-[650px] transition-all duration-300 bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden`}
+            } rounded-xl p-4 sm:p-6 h-[500px] sm:h-[600px] md:h-[650px] transition-all duration-300 bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden`}
           >
             {isOver && (
               <div className="absolute inset-0 bg-indigo-500 opacity-10 z-10 pointer-events-none">
-                {[...Array(20)].map((_, i) => (
+                {[...Array(10)].map((_, i) => (
                   <div
                     key={i}
                     className="absolute w-2 h-2 bg-white rounded-full"
@@ -184,7 +183,7 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
             )}
             {!currentInstruction ? (
               <motion.div
-                className="absolute inset-0 flex flex-col items-center justify-center text-center z-30 p-8 rounded-xl bg-gray-100/90 backdrop-blur-sm"
+                className="absolute inset-0 flex flex-col items-center justify-center text-center z-30 p-6 sm:p-8 rounded-xl bg-gray-100/90 backdrop-blur-sm"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -200,12 +199,12 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
                     ease: "easeInOut",
                   }}
                 >
-                  <Cpu className="mx-auto h-20 w-20 mb-4 text-violet-600" />
+                  <Cpu className="mx-auto h-16 w-16 sm:h-20 sm:w-20 mb-4 text-violet-600" />
                 </motion.div>
-                <p className="text-2xl font-bold text-violet-700 drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)]">
+                <p className="text-xl sm:text-2xl font-bold text-violet-700 drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)]">
                   Drag an instruction here to start
                 </p>
-                <p className="text-lg text-gray-600 mt-2">Watch the CPU process it step by step</p>
+                <p className="text-base sm:text-lg text-gray-600 mt-2">Watch the CPU process it step by step</p>
               </motion.div>
             ) : (
               <>
@@ -456,7 +455,7 @@ function CPUDiagram({
     }
   }
 
-  // Component descriptions for tooltips - now more beginner-friendly
+  // Component descriptions for tooltips
   const getComponentDescription = (component: string) => {
     switch (component) {
       case "controlUnit":
@@ -525,13 +524,13 @@ function CPUDiagram({
   return (
     <TooltipProvider>
       <div className="w-full h-full flex items-center justify-center">
-        <div className="relative w-full h-full rounded-xl p-4 bg-gradient-to-br from-slate-800 via-indigo-900 to-slate-800 shadow-inner overflow-hidden">
+        <div className="relative w-full h-full rounded-xl p-2 sm:p-4 bg-gradient-to-br from-slate-800 via-indigo-900 to-slate-800 shadow-inner overflow-hidden">
           {/* Bento-style grid layout */}
-          <div className="grid grid-cols-12 grid-rows-12 gap-3 h-full w-full p-2">
+          <div className="grid grid-cols-12 grid-rows-12 gap-2 sm:gap-3 h-full w-full p-1 sm:p-2">
             {/* CPU Header - spans full width */}
             <div className="col-span-12 row-span-1 bg-gradient-to-r from-indigo-800 to-violet-800 rounded-xl border-2 border-indigo-400/50 flex items-center justify-center">
-              <Cpu className="mr-2 h-5 w-5 text-white" />
-              <span className="font-bold text-lg text-white">Central Processing Unit (CPU)</span>
+              <Cpu className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              <span className="font-bold text-base sm:text-lg text-white">Central Processing Unit (CPU)</span>
             </div>
 
             {/* Control Unit */}
@@ -542,10 +541,10 @@ function CPUDiagram({
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">{getComponentEmoji("controlUnit")}</div>
-                    <div className="font-bold text-base">Control Unit</div>
-                    <div className="text-xs mt-1 text-slate-600">{getSimpleLabel("controlUnit")}</div>
+                  <div className="text-center p-1 sm:p-2">
+                    <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">{getComponentEmoji("controlUnit")}</div>
+                    <div className="font-bold text-sm sm:text-base">Control Unit</div>
+                    <div className="text-xs mt-1 text-slate-600 hidden sm:block">{getSimpleLabel("controlUnit")}</div>
                   </div>
                 </motion.div>
               </TooltipTrigger>
@@ -562,10 +561,10 @@ function CPUDiagram({
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">{getComponentEmoji("decoder")}</div>
-                    <div className="font-bold text-base">Instruction Decoder</div>
-                    <div className="text-xs mt-1 text-slate-600">{getSimpleLabel("decoder")}</div>
+                  <div className="text-center p-1 sm:p-2">
+                    <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">{getComponentEmoji("decoder")}</div>
+                    <div className="font-bold text-sm sm:text-base">Instruction Decoder</div>
+                    <div className="text-xs mt-1 text-slate-600 hidden sm:block">{getSimpleLabel("decoder")}</div>
                   </div>
                 </motion.div>
               </TooltipTrigger>
@@ -582,13 +581,13 @@ function CPUDiagram({
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">{getComponentEmoji("cache")}</div>
-                    <div className="font-bold text-base">Cache</div>
-                    <div className="text-xs mt-1 text-slate-600">{getSimpleLabel("cache")}</div>
-                    <div className="flex justify-center gap-2 mt-2">
-                      <div className="bg-orange-200 px-2 rounded font-medium text-xs">L1</div>
-                      <div className="bg-orange-200 px-2 rounded font-medium text-xs">L2</div>
+                  <div className="text-center p-1 sm:p-2">
+                    <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">{getComponentEmoji("cache")}</div>
+                    <div className="font-bold text-sm sm:text-base">Cache</div>
+                    <div className="text-xs mt-1 text-slate-600 hidden sm:block">{getSimpleLabel("cache")}</div>
+                    <div className="flex justify-center gap-2 mt-1 sm:mt-2">
+                      <div className="bg-orange-200 px-1 sm:px-2 rounded text-xs font-medium">L1</div>
+                      <div className="bg-orange-200 px-1 sm:px-2 rounded text-xs font-medium">L2</div>
                     </div>
                   </div>
                 </motion.div>
@@ -606,15 +605,15 @@ function CPUDiagram({
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">{getComponentEmoji("alu")}</div>
-                    <div className="font-bold text-base">ALU</div>
-                    <div className="text-xs mt-1 text-slate-600">{getSimpleLabel("alu")}</div>
-                    <div className="flex justify-center gap-2 mt-2 text-xs">
-                      <div className="bg-rose-200 px-2 rounded font-medium">+</div>
-                      <div className="bg-rose-200 px-2 rounded font-medium">-</div>
-                      <div className="bg-rose-200 px-2 rounded font-medium">×</div>
-                      <div className="bg-rose-200 px-2 rounded font-medium">÷</div>
+                  <div className="text-center p-1 sm:p-2">
+                    <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">{getComponentEmoji("alu")}</div>
+                    <div className="font-bold text-sm sm:text-base">ALU</div>
+                    <div className="text-xs mt-1 text-slate-600 hidden sm:block">{getSimpleLabel("alu")}</div>
+                    <div className="flex justify-center gap-1 sm:gap-2 mt-1 sm:mt-2 text-xs">
+                      <div className="bg-rose-200 px-1 sm:px-2 rounded font-medium">+</div>
+                      <div className="bg-rose-200 px-1 sm:px-2 rounded font-medium">-</div>
+                      <div className="bg-rose-200 px-1 sm:px-2 rounded font-medium">×</div>
+                      <div className="bg-rose-200 px-1 sm:px-2 rounded font-medium">÷</div>
                     </div>
                   </div>
                 </motion.div>
@@ -628,9 +627,9 @@ function CPUDiagram({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="col-span-12 row-span-1 border-2 border-indigo-400/50 rounded-xl flex items-center justify-center bg-indigo-900/40 shadow-inner cursor-help">
-                  <div className="font-bold text-base text-white flex items-center">
-                    <span className="inline-block w-3 h-3 rounded-full bg-cyan-400 mr-2 shadow-[0_0_10px_rgba(34,211,238,0.6)]"></span>
-                    System Bus <span className="text-xs ml-2 text-slate-300">(Data Highway)</span>
+                  <div className="font-bold text-sm sm:text-base text-white flex items-center">
+                    <span className="inline-block w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-cyan-400 mr-2 shadow-[0_0_10px_rgba(34,211,238,0.6)]"></span>
+                    System Bus <span className="text-xs ml-2 text-slate-300 hidden sm:inline">(Data Highway)</span>
                   </div>
                 </div>
               </TooltipTrigger>
@@ -656,7 +655,7 @@ function CPUDiagram({
                   <Badge variant="outline" className="mr-2 bg-indigo-700/50 text-indigo-100 border-indigo-500/50">
                     CPU Registers
                   </Badge>
-                  <span className="text-xs text-indigo-300 ml-2">(Quick access storage)</span>
+                  <span className="text-xs text-indigo-300 ml-2 hidden sm:inline">(Quick access storage)</span>
                 </h3>
                 {showRegisters ? (
                   <ChevronUp className="h-4 w-4 text-indigo-300" />
@@ -676,7 +675,7 @@ function CPUDiagram({
                     className="overflow-hidden"
                   >
                     <div className="p-2">
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {Object.entries(registers).map(([name, value]) => (
                           <motion.div
                             key={name}
@@ -713,7 +712,7 @@ function CPUDiagram({
                   <Badge variant="outline" className="mr-2 bg-violet-700/50 text-violet-100 border-violet-500/50">
                     Memory
                   </Badge>
-                  <span className="text-xs text-violet-300 ml-2">(Storage for data and programs)</span>
+                  <span className="text-xs text-violet-300 ml-2 hidden sm:inline">(Storage for data and programs)</span>
                 </h3>
                 {showMemory ? (
                   <ChevronUp className="h-4 w-4 text-violet-300" />
@@ -733,7 +732,7 @@ function CPUDiagram({
                     className="overflow-hidden"
                   >
                     <div className="p-2">
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {memory.slice(0, 16).map((value, index) => (
                           <motion.div
                             key={index}

@@ -184,7 +184,7 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
             )}
             {!currentInstruction ? (
               <motion.div
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center text-slate-500 w-full"
+                className="absolute inset-0 flex flex-col items-center justify-center text-center z-30 p-8 rounded-xl bg-gray-100/90 backdrop-blur-sm"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -200,10 +200,12 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
                     ease: "easeInOut",
                   }}
                 >
-                  <Cpu className="mx-auto h-20 w-20 mb-4 text-indigo-400" />
+                  <Cpu className="mx-auto h-20 w-20 mb-4 text-violet-600" />
                 </motion.div>
-                <p className="text-lg font-medium">Drag an instruction here to start</p>
-                <p className="text-sm text-slate-400 mt-2">Watch the CPU process it step by step</p>
+                <p className="text-2xl font-bold text-violet-700 drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)]">
+                  Drag an instruction here to start
+                </p>
+                <p className="text-lg text-gray-600 mt-2">Watch the CPU process it step by step</p>
               </motion.div>
             ) : (
               <>

@@ -55,7 +55,7 @@ export default function CPUSimulator() {
           // Apply the changes from the current step
           if (step.registerChanges) {
             Object.entries(step.registerChanges).forEach(([reg, value]) => {
-              newRegisters[reg as keyof RegisterState] = value
+              newRegisters[reg as keyof RegisterState] = value ?? 0 // Use 0 as default if value is undefined
             })
           }
 

@@ -4,7 +4,7 @@ import { useDrop } from "react-dnd"
 import { Cpu, ArrowRight, RotateCcw, Info, Zap, Sparkles, HelpCircle, ChevronUp, ChevronDown } from "lucide-react"
 import type { Instruction, CPUState } from "@/lib/types"
 import { Button } from "@/components/ui/button"
-import { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +18,7 @@ interface CPUVisualizationProps {
 }
 
 export default function CPUVisualization({ cpuState, onInstructionDrop, onReset, setCPUState }: CPUVisualizationProps) {
+  const dropRef = useRef<HTMLDivElement | null>(null)
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "INSTRUCTION",
     drop: (item: Instruction) => {
@@ -160,7 +161,10 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
         {/* CPU Diagram */}
         <div>
           <div
-            ref={drop}
+            ref={(el) => {
+              dropRef.current = el
+              drop(el)
+            }}
             className={`relative border-2 ${
               isOver ? "border-indigo-500 bg-indigo-50" : "border-slate-200"
             } rounded-xl p-4 sm:p-6 h-[500px] sm:h-[600px] md:h-[650px] transition-all duration-300 bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden`}
@@ -365,7 +369,7 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
                       {Object.entries(step.registerChanges).map(([reg, value]) => (
                         <div key={reg} className="text-sm flex justify-between p-1 border-b border-slate-100">
                           <span className="font-mono font-medium text-indigo-600">{reg}:</span>
-                          <span className="font-mono">{value.toString(16).padStart(4, "0").toUpperCase()}</span>
+                          <span className="font-mono">{(value ?? 0).toString(16).padStart(4, "0").toUpperCase()}</span>
                         </div>
                       ))}
                     </div>
@@ -379,7 +383,7 @@ export default function CPUVisualization({ cpuState, onInstructionDrop, onReset,
                       {Object.entries(step.memoryChanges).map(([addr, value]) => (
                         <div key={addr} className="text-sm flex justify-between p-1 border-b border-slate-100">
                           <span className="font-mono font-medium text-purple-600">Addr {addr}:</span>
-                          <span className="font-mono">{value.toString(16).padStart(4, "0").toUpperCase()}</span>
+                          <span className="font-mono">{(value ?? 0).toString(16).padStart(4, "0").toUpperCase()}</span>
                         </div>
                       ))}
                     </div>
@@ -418,11 +422,34 @@ function CPUDiagram({
   setShowRegisters: (show: boolean) => void
   showMemory: boolean
   setShowMemory: (show: boolean) => void
-}) {
+}): React.ReactElement {
   const { executionPhase, currentInstruction, registers, memory } = cpuState
 
   // Different components will be highlighted based on the current phase
   const getHighlightClass = (component: string) => {
+    // If idle phase, don't grayscale anything (all components at default color)
+    if (executionPhase === "idle") {
+      switch (component) {
+        case "controlUnit":
+          return "bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200 hover:shadow-md hover:border-amber-300"
+        case "decoder":
+          return "bg-gradient-to-r from-emerald-50 to-emerald-100 border-emerald-200 hover:shadow-md hover:border-emerald-300"
+        case "alu":
+          return "bg-gradient-to-r from-rose-50 to-rose-100 border-rose-200 hover:shadow-md hover:border-rose-300"
+        case "memory":
+          return "bg-gradient-to-r from-violet-50 to-violet-100 border-violet-200 hover:shadow-md hover:border-violet-300"
+        case "registers":
+          return "bg-gradient-to-r from-sky-50 to-sky-100 border-sky-200 hover:shadow-md hover:border-sky-300"
+        case "cache":
+          return "bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200 hover:shadow-md hover:border-orange-300"
+        case "bus":
+          return "bg-gradient-to-r from-slate-100 to-slate-200 border-slate-300"
+        default:
+          return "bg-slate-100 border-slate-300"
+      }
+    }
+
+    // Highlight active components based on current phase
     if (executionPhase === "fetch" && component === "controlUnit")
       return "shadow-[0_0_20px_rgba(251,191,36,0.6)] bg-gradient-to-r from-amber-100 to-amber-200 border-amber-400"
     if (executionPhase === "decode" && component === "decoder")
@@ -433,30 +460,30 @@ function CPUDiagram({
       return "shadow-[0_0_20px_rgba(167,139,250,0.6)] bg-gradient-to-r from-violet-100 to-violet-200 border-violet-400"
     if (executionPhase === "writeback" && component === "registers")
       return "shadow-[0_0_20px_rgba(56,189,248,0.6)] bg-gradient-to-r from-sky-100 to-sky-200 border-sky-400"
-
-    // Default styling for components
+    
+    // For inactive components, apply grayscale
     switch (component) {
       case "controlUnit":
-        return "bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200 hover:shadow-md hover:border-amber-300"
+        return "bg-gradient-to-r from-gray-100 to-gray-200 border-gray-300 hover:shadow-md filter grayscale"
       case "decoder":
-        return "bg-gradient-to-r from-emerald-50 to-emerald-100 border-emerald-200 hover:shadow-md hover:border-emerald-300"
+        return "bg-gradient-to-r from-gray-100 to-gray-200 border-gray-300 hover:shadow-md filter grayscale"
       case "alu":
-        return "bg-gradient-to-r from-rose-50 to-rose-100 border-rose-200 hover:shadow-md hover:border-rose-300"
+        return "bg-gradient-to-r from-gray-100 to-gray-200 border-gray-300 hover:shadow-md filter grayscale"
       case "memory":
-        return "bg-gradient-to-r from-violet-50 to-violet-100 border-violet-200 hover:shadow-md hover:border-violet-300"
+        return "bg-gradient-to-r from-gray-100 to-gray-200 border-gray-300 hover:shadow-md filter grayscale"
       case "registers":
-        return "bg-gradient-to-r from-sky-50 to-sky-100 border-sky-200 hover:shadow-md hover:border-sky-300"
+        return "bg-gradient-to-r from-gray-100 to-gray-200 border-gray-300 hover:shadow-md filter grayscale"
       case "cache":
-        return "bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200 hover:shadow-md hover:border-orange-300"
+        return "bg-gradient-to-r from-gray-100 to-gray-200 border-gray-300 hover:shadow-md filter grayscale"
       case "bus":
-        return "bg-gradient-to-r from-slate-100 to-slate-200 border-slate-300"
+        return "bg-gradient-to-r from-slate-100 to-slate-200 border-slate-300 filter grayscale opacity-75"
       default:
-        return "bg-slate-100 border-slate-300"
+        return "bg-slate-100 border-slate-300 filter grayscale"
     }
   }
 
   // Component descriptions for tooltips
-  const getComponentDescription = (component: string) => {
+  const getComponentDescription = (component: string): string => {
     switch (component) {
       case "controlUnit":
         return "The Control Unit is like the conductor of an orchestra. It coordinates all CPU operations, telling other parts what to do and when to do it."
@@ -482,7 +509,7 @@ function CPUDiagram({
   }
 
   // Get emoji for each component
-  const getComponentEmoji = (component: string) => {
+  const getComponentEmoji = (component: string): string => {
     switch (component) {
       case "controlUnit":
         return "🎮"
@@ -502,7 +529,7 @@ function CPUDiagram({
   }
 
   // Get simple label for each component
-  const getSimpleLabel = (component: string) => {
+  const getSimpleLabel = (component: string): string => {
     switch (component) {
       case "controlUnit":
         return "Gets instructions"

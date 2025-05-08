@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { DndProvider } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
 import { Cpu, Sparkles, BookOpen, Lightbulb } from "lucide-react"
+import { useIsClient } from "../hooks/use-is-client"
 import InstructionPanel from "./instruction-panel"
 import CPUVisualization from "./cpu-visualization"
 import type { Instruction, CPUState, RegisterState } from "@/lib/types"
@@ -55,7 +56,7 @@ export default function CPUSimulator() {
           // Apply the changes from the current step
           if (step.registerChanges) {
             Object.entries(step.registerChanges).forEach(([reg, value]) => {
-              newRegisters[reg as keyof RegisterState] = value
+              newRegisters[reg as keyof RegisterState] = value as number
             })
           }
 
@@ -95,22 +96,8 @@ export default function CPUSimulator() {
     <DndProvider backend={HTML5Backend}>
       <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-slate-50 to-violet-50 py-8">
         {/* Background particles */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute bg-indigo-200 rounded-full opacity-20"
-              style={{
-                width: `${10 + Math.random() * 20}px`,
-                height: `${10 + Math.random() * 20}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `float ${10 + Math.random() * 20}s linear infinite`,
-                animationDelay: `${Math.random() * 10}s`,
-              }}
-            />
-          ))}
-        </div>
+        <ClientOnlyParticles />
+
 
         <div className="container mx-auto px-4 relative z-10">
           <motion.header
@@ -283,5 +270,33 @@ export default function CPUSimulator() {
         }
       `}</style>
     </DndProvider>
+  )
+}
+
+// Client-only component to avoid hydration errors with random values
+function ClientOnlyParticles() {
+  const isClient = useIsClient()
+  
+  if (!isClient) {
+    return <div className="fixed inset-0 pointer-events-none overflow-hidden"></div>
+  }
+  
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      {[...Array(20)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute bg-indigo-200 rounded-full opacity-20"
+          style={{
+            width: `${10 + Math.random() * 20}px`,
+            height: `${10 + Math.random() * 20}px`,
+            top: `${Math.random() * 100}%`,
+            left: `${Math.random() * 100}%`,
+            animation: `float ${10 + Math.random() * 20}s linear infinite`,
+            animationDelay: `${Math.random() * 10}s`,
+          }}
+        />
+      ))}
+    </div>
   )
 }

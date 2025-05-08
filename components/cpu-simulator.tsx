@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { DndProvider } from "react-dnd"
 import { HTML5Backend } from "react-dnd-html5-backend"
 import { Cpu, Sparkles, BookOpen, Lightbulb } from "lucide-react"
+import ClientOnly from "./client-only"
 import InstructionPanel from "./instruction-panel"
 import CPUVisualization from "./cpu-visualization"
 import type { Instruction, CPUState, RegisterState } from "@/lib/types"
@@ -55,7 +56,7 @@ export default function CPUSimulator() {
           // Apply the changes from the current step
           if (step.registerChanges) {
             Object.entries(step.registerChanges).forEach(([reg, value]) => {
-              newRegisters[reg as keyof RegisterState] = value
+              newRegisters[reg as keyof RegisterState] = value as number
             })
           }
 
@@ -91,22 +92,46 @@ export default function CPUSimulator() {
     }))
   }
 
+  const [particles, setParticles] = useState<Array<{
+    id: number;
+    width: number;
+    height: number;
+    top: number;
+    left: number;
+    animation: string;
+    animationDelay: string;
+  }>>([]);
+
+  // Only create particles on the client side
+  useEffect(() => {
+    const newParticles = Array.from({ length: 20 }).map((_, i) => ({
+      id: i,
+      width: 10 + Math.random() * 20,
+      height: 10 + Math.random() * 20,
+      top: Math.random() * 100,
+      left: Math.random() * 100,
+      animation: `float ${10 + Math.random() * 20}s linear infinite`,
+      animationDelay: `${Math.random() * 10}s`
+    }));
+    setParticles(newParticles);
+  }, []);
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-slate-50 to-violet-50 py-8">
-        {/* Background particles */}
+        {/* Background particles - only rendered client-side */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          {[...Array(20)].map((_, i) => (
+          {particles.map((particle) => (
             <div
-              key={i}
+              key={particle.id}
               className="absolute bg-indigo-200 rounded-full opacity-20"
               style={{
-                width: `${10 + Math.random() * 20}px`,
-                height: `${10 + Math.random() * 20}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `float ${10 + Math.random() * 20}s linear infinite`,
-                animationDelay: `${Math.random() * 10}s`,
+                width: `${particle.width}px`,
+                height: `${particle.height}px`,
+                top: `${particle.top}%`,
+                left: `${particle.left}%`,
+                animation: particle.animation,
+                animationDelay: particle.animationDelay,
               }}
             />
           ))}

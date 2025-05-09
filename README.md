@@ -3,6 +3,8 @@
 **Learn how a CPU works by dragging instructions and watching them execute step by step!**  
 🌐 Try it live: <https://computer-archi.vercel.app/>
 
+![Screenshot](/public/CPU-Simulator.png)
+
 ## 🚀 What is This?
 
 The **CPU Simulator** is an interactive educational tool that helps you understand how a CPU (Central Processing Unit) functions. It's perfect for students, educators, and curious learners to explore how instructions are processed in a computer.
@@ -102,7 +104,7 @@ This project was created and maintained by:
 
 - **Lecaroz, Diomael Francis S.**
 - **Magbuhos, Mann Lester M.**
-- **Malapote, Gerard Andrei M.**
+- **Malapote, Gerard Andrei M.** (Project Manager)
 - **Manalo, Jett Mark C.**
 - **Mendoza, Jofether S.**
 - **Pinili, Kristhian O.**
